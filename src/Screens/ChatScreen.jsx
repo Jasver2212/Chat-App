@@ -1,179 +1,190 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
-	View,
-	Text,
-	StyleSheet,
-	TextInput,
-	KeyboardAvoidingView,
-	Platform,
-	Image,
-	TouchableOpacity,
-	FlatList
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Image,
+  TouchableOpacity,
+  FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-	useFonts,
-	JetBrainsMono_400Regular,
-	JetBrainsMono_400Bold,
+  useFonts,
+  JetBrainsMono_400Regular,
 } from "@expo-google-fonts/jetbrains-mono";
 import { useNavigation } from "@react-navigation/native";
 import ChatBubble from "../Elements/Message";
+import { useState, useRef } from "react";
 
 export default function ChatScreen({ route }) {
-	const {name, message} = route.params;
-	const navigation = useNavigation();
+  const { name, message } = route.params;
+  const navigation = useNavigation();
+  const flatListRef = useRef(null);
 
-	const messagesArray = Array.isArray(message) ? message : [{ message }];
+  const [fontsLoaded] = useFonts({ JetBrainsMono_400Regular });
 
-	
-	return (
-		<SafeAreaView style={{ flex: 1 }}>
-			<KeyboardAvoidingView
-				style={{ flex: 1 }}
-				behavior={Platform.OS === "ios" ? "padding" : "height"}
-			>
-				{/* HEADER */}
-				<View style={styles.header}>
-					<View style={styles.horizontalHeader}>
-						{/* BACK BUTTON */}
-						<TouchableOpacity
-							onPress={() => navigation.navigate("ChatList")}
-						>
-							<Ionicons
-								name="arrow-back-outline"
-								size={30}
-								style={{ marginRight: 10 }}
-							/>
-						</TouchableOpacity>
+  const initialMessages = Array.isArray(message)
+    ? message.map((m) => ({ ...m, sender: "them" }))
+    : [{ message, sender: "them" }];
 
-						{/* PROFILE PICTURE */}
-						<Image
-							style={styles.image}
-							source={require("../../assets/black.png")}
-							content="cover"
-						/>
+  const [messages, setMessages] = useState(initialMessages);
+  const [typedMessage, setTypedMessage] = useState("");
 
-						{/* NAME */}
-						<Text style={styles.userText}>{name}</Text>
+  const handleSend = () => {
+    if (typedMessage.trim() === "") return;
+    setMessages((prev) => [...prev, { message: typedMessage, sender: "me" }]);
+    setTypedMessage("");
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  };
 
-						<View style={styles.iconBackground}>
-							{/* SETTINGS ICON */}
-							<Ionicons
-								name="settings-outline"
-								size={30}
-							/>
-						</View>
-					</View>
-				</View>
+  if (!fontsLoaded) return null;
 
-				{/* CONTENT */}
-				<View style={styles.content}>
+  return (
+    <SafeAreaView style={{ flex: 1 }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        {/* HEADER */}
+        <View style={styles.header}>
+          <View style={styles.horizontalHeader}>
+            {/* BACK BUTTON */}
+            <TouchableOpacity onPress={() => navigation.navigate("ChatList")}>
+              <Ionicons name="arrow-back-outline" size={30} color="black" />
+            </TouchableOpacity>
 
-					{/* MESSAGES */}
-					<View style={{ flex: 1 }}>
-						<FlatList
-							data={messagesArray}
-							keyExtractor={(item) => item.id}
-							renderItem={({ item }) => (
-								<ChatBubble
-									message={item.message}
-								/>
-							)}
-						/>
-					</View>
+            {/* PROFILE PICTURE */}
+            <Image
+              style={styles.image}
+              source={require("../../assets/black.png")}
+              resizeMode="cover"
+            />
 
+            {/* NAME */}
+            <Text style={styles.userText}>{name}</Text>
 
+            {/* SETTINGS BUTTON */}
+            <TouchableOpacity style={styles.iconBackground}>
+              <Ionicons name="settings-outline" size={24} color="black" />
+            </TouchableOpacity>
+          </View>
+        </View>
 
+        {/* CHAT CONTENT */}
+        <View style={styles.content}>
+          {/* MESSAGES LIST */}
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item }) => (
+              <ChatBubble message={item.message} sender={item.sender} />
+            )}
+            contentContainerStyle={{ paddingBottom: 10 }}
+            onContentSizeChange={() =>
+              flatListRef.current?.scrollToEnd({ animated: true })
+            }
+          />
 
+          {/* INPUT ROW */}
+          <View style={styles.inputRow}>
+            {/* TEXT INPUT */}
+            <TextInput
+              style={styles.textInputStyle}
+              placeholder="Message"
+              placeholderTextColor="#999"
+              value={typedMessage}
+              onChangeText={setTypedMessage}
+              onSubmitEditing={handleSend}
+              returnKeyType="send"
+              blurOnSubmit={false}
+              multiline
+            />
 
-
-					<View style={styles.inputRow}>
-						{/* TEXT INPUT */}
-						<View style={styles.textInputStyle}>
-							<TextInput
-								placeholder="Message"
-								style={{ paddingLeft: 10 }}
-							/>
-						</View>
-
-						{/* ICON */}
-						<View style={styles.iconContainer}>
-							<Ionicons
-								name="paper-plane-outline"
-								size={24}
-								color={"black"}
-							/>
-						</View>
-					</View>
-				</View>
-			</KeyboardAvoidingView>
-		</SafeAreaView>
-	);
+            {/* SEND BUTTON */}
+            <TouchableOpacity
+              style={[
+                styles.iconContainer,
+                typedMessage.trim() === "" && styles.iconContainerDisabled,
+              ]}
+              onPress={handleSend}
+              disabled={typedMessage.trim() === ""}
+            >
+              <Ionicons name="paper-plane-outline" size={24} color="white" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
-	header: {
-		// backgroundColor: '#FF0000',
-		backgroundColor: "#A3CEF1",
-		height: 70,
-		justifyContent: "center",
-		padding: 15,
-	},
-	horizontalHeader: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 10,
-	},
-	userText: {
-		fontSize: 20,
-		fontFamily: "JetBrainsMono_400Regular",
-		// backgroundColor: '#FF00FF',
-		width: 200,
-		height: 40,
-		lineHeight: 40, // ✅ vertically centers the text
-	},
-
-	content: {
-		// backgroundColor: '#00FF00',
-		backgroundColor: "#274C77",
-		padding: 10,
-		justifyContent: "flex-end",
-		flex: 1,
-	},
-	inputRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 5,
-	},
-	textInputStyle: {
-		backgroundColor: "#E7ECEF",
-		borderRadius: 10,
-		width: 320,
-		justifyContent: "center",
-	},
-	iconContainer: {
-		backgroundColor: "#8B8C89",
-		width: 40,
-		height: 40,
-		borderRadius: 12,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	image: {
-		width: 50,
-		height: 50,
-		justifyContent: "center",
-		alignItems: "center",
-		borderRadius: 25,
-	},
-
-	iconBackground: {
-		backgroundColor: '#8B8C89',
-		width: 40,
-		height: 40,
-		justifyContent: 'center',
-		alignItems: 'center',
-		borderRadius: 10,
-		borderWidth: 2,
-	}
+  header: {
+    backgroundColor: "#A3CEF1",
+    height: 70,
+    justifyContent: "center",
+    paddingHorizontal: 15,
+  },
+  horizontalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  image: {
+    width: 45,
+    height: 45,
+    borderRadius: 25,
+  },
+  userText: {
+    fontSize: 18,
+    fontFamily: "JetBrainsMono_400Regular",
+    flex: 1,
+    color: "black",
+  },
+  iconBackground: {
+    backgroundColor: "#8B8C89",
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 10,
+    borderWidth: 2,
+  },
+  content: {
+    backgroundColor: "#274C77",
+    flex: 1,
+    padding: 10,
+  },
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 8,
+  },
+  textInputStyle: {
+    flex: 1,
+    backgroundColor: "#E7ECEF",
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    fontSize: 15,
+    maxHeight: 100,
+  },
+  iconContainer: {
+    backgroundColor: "#A3CEF1",
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconContainerDisabled: {
+    backgroundColor: "#8B8C89",
+  },
 });

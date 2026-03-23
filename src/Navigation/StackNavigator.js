@@ -6,19 +6,19 @@ import ChatListScreen from "../Screens/ChatListScreen";
 const Stack = createNativeStackNavigator();
 
 export default function StackNavigator() {
-	return (
-		<Stack.Navigator initialRouteName="ChatList">
-			<Stack.Screen
-				name="ChatScreen"
-				component={ChatScreen}
-				options={{ headerShown: false }}
-			/>
+  return (
+    <Stack.Navigator initialRouteName="ChatList">
+      <Stack.Screen
+        name="ChatScreen"
+        component={ChatScreen}
+        options={{ headerShown: false }}
+      />
 
-			<Stack.Screen
-				name="ChatList"
-				component={ChatListScreen}
-				options={{ headerShown: false }}
-			/>
-		</Stack.Navigator>
-	);
+      <Stack.Screen
+        name="ChatList"
+        component={ChatListScreen}
+        options={{ headerShown: false }}
+      />
+    </Stack.Navigator>
+  );
 }
