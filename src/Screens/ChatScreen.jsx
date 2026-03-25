@@ -9,6 +9,7 @@ import {
   Image,
   TouchableOpacity,
   FlatList,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -16,8 +17,11 @@ import {
   JetBrainsMono_400Regular,
 } from "@expo-google-fonts/jetbrains-mono";
 import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import ChatBubble from "../Elements/Message";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+
+const STORAGE_KEY = "sentMessages";
 
 export default function ChatScreen({ route }) {
   const { name, message } = route.params;
@@ -33,13 +37,77 @@ export default function ChatScreen({ route }) {
   const [messages, setMessages] = useState(initialMessages);
   const [typedMessage, setTypedMessage] = useState("");
 
-  const handleSend = () => {
+  // Load persisted sent messages on mount and append them
+  useEffect(() => {
+    const loadSentMessages = async () => {
+      try {
+        const stored = await AsyncStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          const restored = parsed.map((msg) => ({
+            message: msg,
+            sender: "me",
+          }));
+          setMessages((prev) => [...prev, ...restored]);
+        }
+      } catch (e) {
+        console.error("Failed to load sent messages:", e);
+      }
+    };
+    loadSentMessages();
+  }, []);
+
+  const handleSend = async () => {
     if (typedMessage.trim() === "") return;
-    setMessages((prev) => [...prev, { message: typedMessage, sender: "me" }]);
+
+    const newMessage = typedMessage.trim();
+
+    setMessages((prev) => [...prev, { message: newMessage, sender: "me" }]);
     setTypedMessage("");
+
+    try {
+      const stored = await AsyncStorage.getItem(STORAGE_KEY);
+      const existing = stored ? JSON.parse(stored) : [];
+      const updated = [...existing, newMessage];
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.error("Failed to save sent message:", e);
+    }
+
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
     }, 100);
+  };
+
+  const handleDelete = (index) => {
+    if (messages[index].sender !== "me") return;
+
+    Alert.alert(
+      "Delete Message",
+      "Are You Sure you want to delete this message?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            const updated = messages.filter((_, i) => i !== index);
+            setMessages(updated);
+            try {
+              const updatedSent = updated
+                .filter((m) => m.sender === "me")
+                .map((m) => m.message);
+              await AsyncStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify(updatedSent),
+              );
+            } catch (e) {
+              console.log("Failed to update storage after delete", e);
+            }
+          },
+        },
+      ],
+    );
   };
 
   if (!fontsLoaded) return null;
@@ -53,23 +121,22 @@ export default function ChatScreen({ route }) {
         {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.horizontalHeader}>
-            {/* BACK BUTTON */}
             <TouchableOpacity onPress={() => navigation.navigate("ChatList")}>
               <Ionicons name="arrow-back-outline" size={30} color="black" />
             </TouchableOpacity>
 
-            {/* PROFILE PICTURE */}
             <Image
               style={styles.image}
               source={require("../../assets/black.png")}
               resizeMode="cover"
             />
 
-            {/* NAME */}
             <Text style={styles.userText}>{name}</Text>
 
-            {/* SETTINGS BUTTON */}
-            <TouchableOpacity style={styles.iconBackground}>
+            <TouchableOpacity
+              style={styles.iconBackground}
+              onPress={() => navigation.navigate("Settings")}
+            >
               <Ionicons name="settings-outline" size={24} color="black" />
             </TouchableOpacity>
           </View>
@@ -77,13 +144,18 @@ export default function ChatScreen({ route }) {
 
         {/* CHAT CONTENT */}
         <View style={styles.content}>
-          {/* MESSAGES LIST */}
           <FlatList
             ref={flatListRef}
             data={messages}
             keyExtractor={(item, index) => index.toString()}
-            renderItem={({ item }) => (
-              <ChatBubble message={item.message} sender={item.sender} />
+            renderItem={({ item, index }) => (
+              <TouchableOpacity
+                onLongPress={() => handleDelete(index)}
+                delayLongPress={400}
+                activeOpacity={1}
+              >
+                <ChatBubble message={item.message} sender={item.sender} />
+              </TouchableOpacity>
             )}
             contentContainerStyle={{ paddingBottom: 10 }}
             onContentSizeChange={() =>
@@ -91,9 +163,7 @@ export default function ChatScreen({ route }) {
             }
           />
 
-          {/* INPUT ROW */}
           <View style={styles.inputRow}>
-            {/* TEXT INPUT */}
             <TextInput
               style={styles.textInputStyle}
               placeholder="Message"
@@ -106,7 +176,6 @@ export default function ChatScreen({ route }) {
               multiline
             />
 
-            {/* SEND BUTTON */}
             <TouchableOpacity
               style={[
                 styles.iconContainer,
@@ -124,6 +193,7 @@ export default function ChatScreen({ route }) {
   );
 }
 
+// ... styles unchanged
 const styles = StyleSheet.create({
   header: {
     backgroundColor: "#A3CEF1",

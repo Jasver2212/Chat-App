@@ -2,6 +2,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import ChatScreen from "../Screens/ChatScreen";
 import ChatListScreen from "../Screens/ChatListScreen";
+import SettingScreen from "../Screens/SettingsScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -17,6 +18,12 @@ export default function StackNavigator() {
       <Stack.Screen
         name="ChatList"
         component={ChatListScreen}
+        options={{ headerShown: false }}
+      />
+
+      <Stack.Screen
+        name="Settings"
+        component={SettingScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
