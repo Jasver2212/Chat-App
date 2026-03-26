@@ -37,7 +37,6 @@ export default function ChatScreen({ route }) {
   const [messages, setMessages] = useState(initialMessages);
   const [typedMessage, setTypedMessage] = useState("");
 
-  // Load persisted sent messages on mount and append them
   useEffect(() => {
     const loadSentMessages = async () => {
       try {

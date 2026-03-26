@@ -1,47 +1,62 @@
+import { useState } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   TextInput,
   KeyboardAvoidingView,
   FlatList,
+  TouchableOpacity,
+  Text,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ChatListUser from "../Elements/ChatListUser";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 
-const data = [
-  { id: "1", name: "first", lastMessage: "..." },
-  { id: "2", name: "second", lastMessage: "Hello there!" },
-  { id: "3", name: "third", lastMessage: "How are you?" },
-  { id: "4", name: "fourth", lastMessage: "Let's meet later." },
-  { id: "5", name: "fifth", lastMessage: "See you soon!" },
-  { id: "6", name: "sixth", lastMessage: "Good morning!" },
-  { id: "7", name: "seventh", lastMessage: "Don't forget the meeting." },
-  { id: "8", name: "eighth", lastMessage: "Thanks!" },
-  { id: "9", name: "ninth", lastMessage: "Okay 👍" },
-  { id: "10", name: "tenth", lastMessage: "Got it." },
-  { id: "11", name: "eleventh", lastMessage: "Talk to you later." },
-];
+const data = [{ id: "1", name: "Doni", lastMessage: "Halo" }];
 
 export default function ChatListScreen() {
+  const navigation = useNavigation();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredData = data.filter(
+    (item) =>
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.lastMessage.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={styles.container}>
         <View style={styles.container}>
           <View style={styles.searchBar}>
-            <TextInput placeholder="Search" style={styles.input} />
+            {/* SEARCH BAR */}
+            <TextInput
+              placeholder="Search"
+              style={styles.input}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              clearButtonMode="while-editing"
+            />
 
-            <View style={styles.iconBackground}>
-              <Ionicons name="settings-outline" size={24} />
-            </View>
+            {/* SETTINGS ICON */}
+            <TouchableOpacity onPress={() => navigation.navigate("Settings")}>
+              <View style={styles.iconBackground}>
+                <Ionicons name="settings-outline" size={24} />
+              </View>
+            </TouchableOpacity>
           </View>
 
+          {/* RENDER */}
           <FlatList
-            data={data}
+            data={filteredData}
+            keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <ChatListUser name={item.name} message={item.lastMessage} />
             )}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>No chats found</Text>
+            }
           />
         </View>
       </KeyboardAvoidingView>
@@ -67,11 +82,6 @@ const styles = StyleSheet.create({
     marginRight: 10,
     borderWidth: 2,
   },
-  chatList: {
-    flex: 1,
-    backgroundColor: "#FF0000",
-    position: "relative",
-  },
   iconBackground: {
     backgroundColor: "#8B8C89",
     width: 40,
@@ -80,5 +90,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 10,
     borderWidth: 2,
+  },
+  emptyText: {
+    color: "rgba(255,255,255,0.5)",
+    textAlign: "center",
+    marginTop: 40,
+    fontSize: 15,
   },
 });

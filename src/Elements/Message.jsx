@@ -1,12 +1,27 @@
+import { useContext } from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { SettingsContext } from "../Screens/SettingsScreen";
 
 export default function ChatBubble({ message, sender }) {
   const isMe = sender === "me";
+  const { fontSize, isDarkMode } = useContext(SettingsContext);
 
   return (
     <View style={[styles.row, isMe ? styles.rowRight : styles.rowLeft]}>
-      <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleThem]}>
-        <Text style={[styles.text, isMe ? styles.textMe : styles.textThem]}>
+      <View
+        style={[
+          styles.bubble,
+          isMe ? styles.bubbleMe : styles.bubbleThem,
+          isDarkMode && (isMe ? styles.bubbleMeDark : styles.bubbleThemDark),
+        ]}
+      >
+        <Text
+          style={[
+            isMe ? styles.textMe : styles.textThem,
+            isDarkMode && styles.textDark,
+            { fontSize },
+          ]}
+        >
           {message}
         </Text>
       </View>
@@ -40,13 +55,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#E7ECEF",
     borderBottomLeftRadius: 4,
   },
-  text: {
-    fontSize: 15,
+  bubbleMeDark: {
+    backgroundColor: "#1e3a5f",
+  },
+  bubbleThemDark: {
+    backgroundColor: "#112240",
   },
   textMe: {
     color: "#000",
   },
   textThem: {
     color: "#333",
+  },
+  textDark: {
+    color: "#A3CEF1",
   },
 });
